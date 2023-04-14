@@ -1,0 +1,35 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++ アクティブなファイルのビルド",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-I/usr/local/include/opencv4/",
+                "-fdiagnostics-color=always",
+                "-g",
+                "-std=c++2a",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-lfmt",
+                "-lopencv_core",
+                "-lopencv_imgcodecs",
+                "-lopencv_highgui",
+                "-lopencv_features2d"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "デバッガーによって生成されたタスク。"
+        }
+    ],
+    "version": "2.0.0"
+}
