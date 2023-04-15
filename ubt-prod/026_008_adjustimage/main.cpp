@@ -31,9 +31,9 @@ int main(int argc, char *argv[]) {
     /*                                  */
 
     /* 3頂点を取得 */
-    cv::Point basetop  = cv::Point(0, stdposimg.cols);
-    cv::Point basebtm  = cv::Point(0, 0);
-    cv::Point baseright= cv::Point(0, 0);
+    cv::Point2f basetop  = cv::Point2f(0, stdposimg.cols);
+    cv::Point2f basebtm  = cv::Point2f(0, 0);
+    cv::Point2f baseright= cv::Point2f(0, 0);
     for(int y = 0; y < stdposimg.rows; y++) {
         for(int x = 0; x < stdposimg.cols; x++) {
             int B = stdposimg.data[ y*stdposimg.step + x*stdposimg.elemSize() + 0 ];
@@ -44,13 +44,13 @@ int main(int argc, char *argv[]) {
                 // std::cout << fmt::format("{}x{} B:{} G:{} R:{} A:{}", x, y, B, G, R, A) << std::endl;
                 /* 頂点(上) */
                 if(y < basetop.y)
-                    basetop  = cv::Point(x, y);
+                    basetop  = cv::Point2f(x, y);
                 /* 頂点(下) */
                 if(y > basebtm.y)
-                    basebtm  = cv::Point(x, y);
+                    basebtm  = cv::Point2f(x, y);
                 /* 頂点(右) */
                 if(x > baseright.x)
-                    baseright= cv::Point(x, y);
+                    baseright= cv::Point2f(x, y);
             }
             // else if(R != 0) {
             //     std::cout << fmt::format("{}x{} B:{} G:{} R:{} A:{}", x, y, B, G, R, A) << std::endl;
@@ -99,8 +99,8 @@ int main(int argc, char *argv[]) {
         /*     maker-btm                    */
         /*                                  */
         /* 基準線の座標を取得 */
-        cv::Point makertop  = cv::Point(0, makerimg.cols);
-        cv::Point makerbtm  = cv::Point(0, 0);
+        cv::Point2f makertop  = cv::Point2f(0, makerimg.cols);
+        cv::Point2f makerbtm  = cv::Point2f(0, 0);
         for(int y = 0; y < makerimg.rows; y++) {
             for(int x = 0; x < makerimg.cols; x++) {
                 int B = makerimg.data[ y*makerimg.step + x*makerimg.elemSize() + 0 ];
@@ -110,10 +110,10 @@ int main(int argc, char *argv[]) {
                 if(R == 255) {
                     /* 頂点(上) */
                     if(y < makertop.y)
-                        makertop  = cv::Point(x, y);
+                        makertop  = cv::Point2f(x, y);
                     /* 頂点(下) */
                     if(y > makerbtm.y)
-                        makerbtm  = cv::Point(x, y);
+                        makerbtm  = cv::Point2f(x, y);
                 }
             }
         }
@@ -146,8 +146,8 @@ int main(int argc, char *argv[]) {
         /* 準備1.基準線を点Oに移動(移動量は保持っとく) */
         int offsetx = makerbtm.x;
         int offsety = makerbtm.y;
-        cv::Point makertoptrans = cv::Point(makertop.x-offsetx, makertop.y-offsety);/* pointbtm分のOffset */
-        cv::Point makerbtmtrans = cv::Point(makerbtm.x-offsetx, makerbtm.y-offsety);/* pointbtmを点Oにする */
+        cv::Point2f makertoptrans = cv::Point2f(makertop.x-offsetx, makertop.y-offsety);/* pointbtm分のOffset */
+        cv::Point2f makerbtmtrans = cv::Point2f(makerbtm.x-offsetx, makerbtm.y-offsety);/* pointbtmを点Oにする */
         std::cout << fmt::format("222 offset(\t{}\t, \t{}\t) \nmaker-top-trans(\t{}\t, \t{}\t) maker-btm-trans(\t{}\t, \t{}\t)", offsetx,offsety, makertoptrans.x,makertoptrans.y, makerbtmtrans.x,makerbtmtrans.y) << std::endl;
 
         /*                                       */
@@ -169,8 +169,8 @@ int main(int argc, char *argv[]) {
         /* y′=xsin(θ)+ycos(θ) */
         double makertoptransrotx = makertoptrans.x * std::cos(-theta) - makertoptrans.y * std::sin(-theta);
         double makertoptransroty = makertoptrans.x * std::sin(-theta) + makertoptrans.y * std::cos(-theta);
-        cv::Point makertoptransrot = cv::Point((int)makertoptransrotx, (int)makertoptransroty);   /* x軸上に回転 */
-        cv::Point makerbtmtransrot = makerbtmtrans;                                               /* 点Oのまま */
+        cv::Point2f makertoptransrot = cv::Point2f(makertoptransrotx, makertoptransroty);   /* x軸上に回転 */
+        cv::Point2f makerbtmtransrot = makerbtmtrans;                                       /* 点Oのまま */
         std::cout << fmt::format("444 maker-top-transrot(\t{}\t, \t{}\t) maker-btm-transrot(\t{}\t, \t{}\t)", makertoptransrot.x,makertoptransrot.y, makerbtmtransrot.x,makerbtmtransrot.y) << std::endl;
 
         /*                                   */
@@ -185,30 +185,30 @@ int main(int argc, char *argv[]) {
         /*               △ <-こいつを求める */
         /*                                   */
         /* 準備3.(準備2の2座標)と(3頂点から求めた長さ)を使って、のこり1つの座標をもとめる */
-        /* tmprrrx = (-t2r^2 + b2r^2 + top.x^2) / (2 * top.x) */
-        /* tmprrry = sqrt(b2r^2 - tmprrrx^2) = sqrt(t2r^2 - makertoptransrot.x^2 + 2*makertoptransrot.x*tmprrrx - tmprrrx^2) */
-        double tmprrrx = (-(makerlent2r*makerlent2r) + (makerlenb2r*makerlenb2r) + (makertoptransrot.x*makertoptransrot.x)) / (2 * makertoptransrot.x);
-        double tmprrry = std::sqrt((makerlenb2r*makerlenb2r) - (tmprrrx*tmprrrx));
-        double tmprrry2= std::sqrt((makerlent2r*makerlent2r) - (makertoptransrot.x*makertoptransrot.x) + 2*makertoptransrot.x*tmprrrx - (tmprrrx*tmprrrx));
-        std::cout << fmt::format("555 tmp(\t{}\t, \t{}\t, \t{}\t)", tmprrrx, tmprrry, tmprrry2) << std::endl;
+        /* centerpostransrotx = (-t2r^2 + b2r^2 + top.x^2) / (2 * top.x) */
+        /* centerpostransroty = sqrt(b2r^2 - centerpostransrotx^2) = sqrt(t2r^2 - makertoptransrot.x^2 + 2*makertoptransrot.x*centerpostransrotx - centerpostransrotx^2) */
+        double centerpostransrotx = (-(makerlent2r*makerlent2r) + (makerlenb2r*makerlenb2r) + (makertoptransrot.x*makertoptransrot.x)) / (2 * makertoptransrot.x);
+        double centerpostransroty = std::sqrt((makerlenb2r*makerlenb2r) - (centerpostransrotx*centerpostransrotx));
+        double centerpostransroty2= std::sqrt((makerlent2r*makerlent2r) - (makertoptransrot.x*makertoptransrot.x) + 2*makertoptransrot.x*centerpostransrotx - (centerpostransrotx*centerpostransrotx));
+        std::cout << fmt::format("555 tmp(\t{}\t, \t{}\t, \t{}\t)", centerpostransrotx, centerpostransroty, centerpostransroty2) << std::endl;
 
         /* 準備4.回転を元に戻す */
-        double makerrrrtransx_r = tmprrrx * std::cos(theta) - tmprrry * std::sin(theta);
-        double makerrrrtransy_r = tmprrrx * std::sin(theta) + tmprrry * std::cos(theta);
-        cv::Point makerrrrtrans_r = cv::Point(makerrrrtransx_r, makerrrrtransy_r);
+        double centerpostransx = centerpostransrotx * std::cos(theta) - centerpostransroty * std::sin(theta);
+        double centerpostransy = centerpostransrotx * std::sin(theta) + centerpostransroty * std::cos(theta);
+        cv::Point2f centerpostrans = cv::Point2f(centerpostransx, centerpostransy);
 
         double makertoptransx_r = makertoptransrot.x * std::cos(theta) - makertoptransrot.y * std::sin(theta);
         double makertoptransy_r = makertoptransrot.x * std::sin(theta) + makertoptransrot.y * std::cos(theta);
-        cv::Point makertoptrans_r = cv::Point(makertoptransx_r, makertoptransy_r);
+        cv::Point2f makertoptrans_r = cv::Point2f(makertoptransx_r, makertoptransy_r);
 
-        cv::Point makerbtmtrans_r = makerbtmtransrot;                             /* 点Oのまま */
-        std::cout << fmt::format("666 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertoptrans_r.x,makertoptrans_r.y, makerbtmtrans_r.x,makerbtmtrans_r.y, makerrrrtrans_r.x,makerrrrtrans_r.y) << std::endl;
+        cv::Point2f makerbtmtrans_r = makerbtmtransrot;                             /* 点Oのまま */
+        std::cout << fmt::format("666 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertoptrans_r.x,makertoptrans_r.y, makerbtmtrans_r.x,makerbtmtrans_r.y, centerpostrans.x,centerpostrans.y) << std::endl;
 
         /* 準備5.移動を元に戻す */
-        cv::Point makerrrr_r = cv::Point(makerrrrtrans_r.x+offsetx, makerrrrtrans_r.y+offsety);
-        cv::Point makertop_r = cv::Point(makertoptrans_r.x+offsetx, makertoptrans_r.y+offsety);
-        cv::Point makerbtm_r = cv::Point(makerbtmtrans_r.x+offsetx, makerbtmtrans_r.y+offsety);
-        std::cout << fmt::format("777 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertop_r.x,makertop_r.y, makerbtm_r.x,makerbtm_r.y, makerrrr_r.x,makerrrr_r.y) << std::endl;
+        cv::Point2f centerpos = cv::Point2f(centerpostrans.x+offsetx, centerpostrans.y+offsety);
+        cv::Point2f makertop_r = cv::Point2f(makertoptrans_r.x+offsetx, makertoptrans_r.y+offsety);
+        cv::Point2f makerbtm_r = cv::Point2f(makerbtmtrans_r.x+offsetx, makerbtmtrans_r.y+offsety);
+        std::cout << fmt::format("777 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertop_r.x,makertop_r.y, makerbtm_r.x,makerbtm_r.y, centerpos.x,centerpos.y) << std::endl;
 
         /* 拡縮量を求める */
 //      double scale = (double)makerlent2b / baselent2b;    /* すでに算出済み */
@@ -221,6 +221,22 @@ int main(int argc, char *argv[]) {
 
         int aaa = 0;
         /* 回転/拡縮を実行 */
+        /* 画像Open */
+        cv::Mat4b targetimg = cv::imread(makerfilefullpath, cv::IMREAD_UNCHANGED);		/* TODO : 確認のためにマーカー画像を読み込む */
+        if(targetimg.empty()) {
+            std::cout << fmt::format("Target画像の読み込みに失敗!! {}", makerfilefullpath) << std::endl;
+            return 1;
+        }
+        std::cout << fmt::format("Target画像 サイズ={}x{} channels: {}", targetimg.cols, targetimg.rows, targetimg.channels()) << std::endl;
+        /* 回転&拡縮の行列取得 */
+//        cv::Mat rotscalemat = cv::getRotationMatrix2D(centerpos, degree, scale);
+//		GetRotationMatrix2D(center, angle, scale, mapMatrix) → None¶
+//		2次元回転のアフィン変換行列を求めます．
+//		パラメタ:	
+//		center (CvPoint2D32f) – 入力画像における回転中心
+//		angle (float) – 度単位で表される回転角度．正の値は，反時計回りの回転を意味します（座標原点は左上にあると仮定されます）
+//		scale (float) – 等方性スケーリング係数
+//		mapMatrix (CvMat) – 2\times 3 の出力行列へのポインタ
 
         /* 移動量を求める */
 
@@ -234,5 +250,6 @@ int main(int argc, char *argv[]) {
 }
 
 #if 0
+cd ubt-prod/026_008_adjustimage
 /usr/bin/g++ "-I/usr/local/include/opencv4/" "-fdiagnostics-color=always" "-g" "-std=c++2a" "main.cpp" "-o" "mainaaa" "-lfmt" "-lopencv_core" "-lopencv_imgcodecs" "-lopencv_highgui" "-lopencv_features2d"
 #endif
