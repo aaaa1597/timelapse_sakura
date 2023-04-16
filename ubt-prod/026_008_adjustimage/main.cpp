@@ -52,12 +52,6 @@ int main(int argc, char *argv[]) {
                 if(x > baseright.x)
                     baseright= cv::Point2f(x, y);
             }
-            // else if(R != 0) {
-            //     std::cout << fmt::format("{}x{} B:{} G:{} R:{} A:{}", x, y, B, G, R, A) << std::endl;
-            // }
-            // else if(B != 0 || G != 0 || R != 0 || A != 0 ) {
-            //     std::cout << fmt::format("illigal!! {}x{} B:{} G:{} R:{} A:{}", x, y, B, G, R, A) << std::endl;
-            // }
         }
     }
     std::cout << fmt::format("ベースtop(\t{}\t, \t{}\t) ベースbottom(\t{}\t, \t{}\t) ベースright(\t{}\t, \t{}\t)", basetop.x,basetop.y, basebtm.x,basebtm.y, baseright.x,baseright.y) << std::endl;
@@ -71,6 +65,7 @@ int main(int argc, char *argv[]) {
     /* 画像合わせ処理 */
     /******************/
     namespace fs = std::filesystem;
+    fs::remove_all("/media/sf_timelapse_sakura/pictures/026_009_tmprotscale");
     for(const fs::directory_entry &file : fs::directory_iterator("/media/sf_timelapse_sakura/pictures/026_006_Thinout")) {
         std::cout << "----------------------  ----------------------" << std::endl;
         /* マーカー画像のパスを生成 */
@@ -125,7 +120,7 @@ int main(int argc, char *argv[]) {
         double scale = (double)makerlent2b / baselent2b;
         double makerlent2r = baselent2r * scale;
         double makerlenb2r = baselenb2r * scale;
-        std::cout << fmt::format("111 scale(\t{}\t) t2b(base:\t{}\t, maker:\t{}\t) makerlen-t2r(\t{}\t) makerlen-b2r(\t{}\t)", scale, baselent2b,makerlent2b, makerlent2r, makerlenb2r) << std::endl;
+        std::cout << fmt::format("111 拡縮率を求める scale(\t{}\t) t2b(base:\t{}\t, maker:\t{}\t) makerlen-t2r(\t{}\t) makerlen-b2r(\t{}\t)", scale, baselent2b,makerlent2b, makerlent2r, makerlenb2r) << std::endl;
 
         /* 回転/拡縮の中心点を求める */
         // https://memo.sugyan.com/entry/20090408/1239148436
@@ -148,7 +143,7 @@ int main(int argc, char *argv[]) {
         int offsety = makerbtm.y;
         cv::Point2f makertoptrans = cv::Point2f(makertop.x-offsetx, makertop.y-offsety);/* pointbtm分のOffset */
         cv::Point2f makerbtmtrans = cv::Point2f(makerbtm.x-offsetx, makerbtm.y-offsety);/* pointbtmを点Oにする */
-        std::cout << fmt::format("222 offset(\t{}\t, \t{}\t) \nmaker-top-trans(\t{}\t, \t{}\t) maker-btm-trans(\t{}\t, \t{}\t)", offsetx,offsety, makertoptrans.x,makertoptrans.y, makerbtmtrans.x,makerbtmtrans.y) << std::endl;
+        std::cout << fmt::format("222 tmp移動量求め移動 offset(\t{}\t, \t{}\t) \nmaker-top-trans(\t{}\t, \t{}\t) maker-btm-trans(\t{}\t, \t{}\t)", offsetx,offsety, makertoptrans.x,makertoptrans.y, makerbtmtrans.x,makerbtmtrans.y) << std::endl;
 
         /*                                       */
         /*                                       */
@@ -164,14 +159,14 @@ int main(int argc, char *argv[]) {
         /* 準備2.基準線をy軸上になるように回転 */
         double tilt = (double)makertoptrans.y / makertoptrans.x;
         double theta = (makertoptrans.x < 0) ? M_PI + std::atan(tilt) : std::atan(tilt);
-        std::cout << fmt::format("333 theta(\t{}\t)", theta) << std::endl;
+        std::cout << fmt::format("333 tmp回転量を求める theta(\t{}\t)", theta) << std::endl;
         /* x′=xcos(θ)−ysin(θ) */
         /* y′=xsin(θ)+ycos(θ) */
         double makertoptransrotx = makertoptrans.x * std::cos(-theta) - makertoptrans.y * std::sin(-theta);
         double makertoptransroty = makertoptrans.x * std::sin(-theta) + makertoptrans.y * std::cos(-theta);
         cv::Point2f makertoptransrot = cv::Point2f(makertoptransrotx, makertoptransroty);   /* x軸上に回転 */
         cv::Point2f makerbtmtransrot = makerbtmtrans;                                       /* 点Oのまま */
-        std::cout << fmt::format("444 maker-top-transrot(\t{}\t, \t{}\t) maker-btm-transrot(\t{}\t, \t{}\t)", makertoptransrot.x,makertoptransrot.y, makerbtmtransrot.x,makerbtmtransrot.y) << std::endl;
+        std::cout << fmt::format("444 tmp回転 maker-top-transrot(\t{}\t, \t{}\t) maker-btm-transrot(\t{}\t, \t{}\t)", makertoptransrot.x,makertoptransrot.y, makerbtmtransrot.x,makerbtmtransrot.y) << std::endl;
 
         /*                                   */
         /*     bottom                 top    */
@@ -190,7 +185,7 @@ int main(int argc, char *argv[]) {
         double centerpostransrotx = (-(makerlent2r*makerlent2r) + (makerlenb2r*makerlenb2r) + (makertoptransrot.x*makertoptransrot.x)) / (2 * makertoptransrot.x);
         double centerpostransroty = std::sqrt((makerlenb2r*makerlenb2r) - (centerpostransrotx*centerpostransrotx));
         double centerpostransroty2= std::sqrt((makerlent2r*makerlent2r) - (makertoptransrot.x*makertoptransrot.x) + 2*makertoptransrot.x*centerpostransrotx - (centerpostransrotx*centerpostransrotx));
-        std::cout << fmt::format("555 tmp(\t{}\t, \t{}\t, \t{}\t)", centerpostransrotx, centerpostransroty, centerpostransroty2) << std::endl;
+        std::cout << fmt::format("555 (仮)中心座標算出 tmp(\t{}\t, \t{}\t, \t{}\t)", centerpostransrotx, centerpostransroty, centerpostransroty2) << std::endl;
 
         /* 準備4.回転を元に戻す */
         double centerpostransx = centerpostransrotx * std::cos(theta) - centerpostransroty * std::sin(theta);
@@ -200,27 +195,25 @@ int main(int argc, char *argv[]) {
         double makertoptransx_r = makertoptransrot.x * std::cos(theta) - makertoptransrot.y * std::sin(theta);
         double makertoptransy_r = makertoptransrot.x * std::sin(theta) + makertoptransrot.y * std::cos(theta);
         cv::Point2f makertoptrans_r = cv::Point2f(makertoptransx_r, makertoptransy_r);
-
-        cv::Point2f makerbtmtrans_r = makerbtmtransrot;                             /* 点Oのまま */
-        std::cout << fmt::format("666 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertoptrans_r.x,makertoptrans_r.y, makerbtmtrans_r.x,makerbtmtrans_r.y, centerpostrans.x,centerpostrans.y) << std::endl;
+        cv::Point2f makerbtmtrans_r = makerbtmtransrot;                               /* 点Oのまま */
+        std::cout << fmt::format("666 tmp回転戻し makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) centerpos(\t{}\t, \t{}\t)", makertoptrans_r.x,makertoptrans_r.y, makerbtmtrans_r.x,makerbtmtrans_r.y, centerpostrans.x,centerpostrans.y) << std::endl;
 
         /* 準備5.移動を元に戻す */
         cv::Point2f centerpos = cv::Point2f(centerpostrans.x+offsetx, centerpostrans.y+offsety);
         cv::Point2f makertop_r = cv::Point2f(makertoptrans_r.x+offsetx, makertoptrans_r.y+offsety);
         cv::Point2f makerbtm_r = cv::Point2f(makerbtmtrans_r.x+offsetx, makerbtmtrans_r.y+offsety);
-        std::cout << fmt::format("777 makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) makerrrr(\t{}\t, \t{}\t)", makertop_r.x,makertop_r.y, makerbtm_r.x,makerbtm_r.y, centerpos.x,centerpos.y) << std::endl;
+        std::cout << fmt::format("777 tmp移動戻し makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t) centerpos(\t{}\t, \t{}\t)", makertop_r.x,makertop_r.y, makerbtm_r.x,makerbtm_r.y, centerpos.x,centerpos.y) << std::endl;
 
         /* 拡縮量を求める */
 //      double scale = (double)makerlent2b / baselent2b;    /* すでに算出済み */
 
         /* 回転量を求める(y軸とマーカー線から) */
         double rotatetilt = ((double)makertop.y-makerbtm.y) / (makertop.x-makerbtm.x);
-        double rotate_tmp = (makertop.x > makerbtm.x) ? -1 * std::atan(rotatetilt) : std::atan(rotatetilt);
-        double rotate = (90*M_PI/180) - rotate_tmp;
-        std::cout << fmt::format("888 rotate(\t{}\t) rotate_tmp(\t{}\t) rotatetilt(\t{}\t) makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t)", rotate, rotate_tmp, rotatetilt, makertop.x,makertop.y, makerbtm.x,makerbtm.y) << std::endl;
+        double rotaterad = std::atan(rotatetilt);
+        double rotatedegree = (90) - rotaterad * (180/M_PI);
+        std::cout << fmt::format("888 回転量求める rotatedegree(\t{}\t) rotaterad(\t{}\t) rotatetilt(\t{}\t) makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t)", rotatedegree, rotaterad, rotatetilt, makertop.x,makertop.y, makerbtm.x,makerbtm.y) << std::endl;
+        std::cout << fmt::format("888 材料揃った centerpos(\t{}\t, \t{}\t) rotatedegree(\t{}\t) scale(\t{}\t)", centerpos.x,centerpos.y, rotatedegree, scale) << std::endl;
 
-        int aaa = 0;
-        /* 回転/拡縮を実行 */
         /* 画像Open */
         cv::Mat4b targetimg = cv::imread(makerfilefullpath, cv::IMREAD_UNCHANGED);		/* TODO : 確認のためにマーカー画像を読み込む */
         if(targetimg.empty()) {
@@ -228,8 +221,22 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         std::cout << fmt::format("Target画像 サイズ={}x{} channels: {}", targetimg.cols, targetimg.rows, targetimg.channels()) << std::endl;
+
         /* 回転&拡縮の行列取得 */
-//        cv::Mat rotscalemat = cv::getRotationMatrix2D(centerpos, degree, scale);
+        cv::Mat rotscaleMatrix = cv::getRotationMatrix2D(centerpos, -rotatedegree, 1/scale);
+        /* 回転&拡縮 実行 */
+        cv::Mat4b rotscaleimg;
+        cv::warpAffine(targetimg, rotscaleimg, rotscaleMatrix, targetimg.size(), cv::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+
+        /* 暫定出力先パス生成 */
+        std::string tmppath001 = file.path().parent_path().parent_path().string() + "/026_009_tmprotscale/";
+        fs::create_directories(tmppath001);
+        std::string tmpfilefullpath = file.path().parent_path().parent_path().string() + "/026_009_tmprotscale/" + file.path().stem().string() + ".png";
+
+        /* 暫定出力 */
+        cv::imwrite(tmpfilefullpath, rotscaleimg);	
+
+//      int aaa = 0;
 //		GetRotationMatrix2D(center, angle, scale, mapMatrix) → None¶
 //		2次元回転のアフィン変換行列を求めます．
 //		パラメタ:	
