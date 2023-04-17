@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     namespace fs = std::filesystem;
     fs::remove_all("/media/sf_timelapse_sakura/pictures/026_009_makermove");
     fs::remove_all("/media/sf_timelapse_sakura/pictures/026_010_makercomplete");
-    fs::remove_all("/media/sf_timelapse_sakura/pictures/026_011_makercomplete");
+//  fs::remove_all("/media/sf_timelapse_sakura/pictures/026_011_makercomplete4test");
     for(const fs::directory_entry &file : fs::directory_iterator("/media/sf_timelapse_sakura/pictures/026_006_Thinout")) {
         std::cout << fmt::format("----------------------  ---------------------- lpct={}", lpct++) << std::endl;
         /* マーカー画像のパスを生成 */
@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
         /* 回転量を求める(y軸とマーカー線から) */
         double rotatetilt = ((double)makertop.y-makerbtm.y) / (makertop.x-makerbtm.x);
         double rotaterad = std::atan(rotatetilt);
-        double rotatedegree = (rotaterad < 0) ? (90) + rotaterad * (180/M_PI) : (90) - rotaterad * (180/M_PI);
+        double rotatedegree = (rotaterad < 0) ? (-1*((90) + rotaterad * (180/M_PI))) : ((90) - rotaterad * (180/M_PI));
         std::cout << fmt::format("888 回転量求める rotatedegree(\t{}\t) rotaterad(\t{}\t) rotatetilt(\t{}\t) makertop(\t{}\t, \t{}\t) makerbtm(\t{}\t, \t{}\t)", rotatedegree, rotaterad, rotatetilt, makertop.x,makertop.y, makerbtm.x,makerbtm.y) << std::endl;
 
         /* 移動量を求める(回転/拡縮の中心を、ベース画像とマーカ画像で合わせる) */
@@ -252,15 +252,15 @@ int main(int argc, char *argv[]) {
         std::string makermovefilefullpath = file.path().parent_path().parent_path().string() + "/026_009_makermove/" + file.path().stem().string() + ".png";
         cv::imwrite(makermovefilefullpath, makermoveimg);
 
-        {
-        cv::Mat image = cv::Mat::zeros(cv::Size(2560,1280), CV_8UC3);
-        cv::line(image, centerposcomplete, makertop_rcomplete, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-        cv::line(image, centerposcomplete, makerbtm_rcomplete, cv::Scalar(255, 0, 0), 1, cv::LINE_AA);
-        std::string makercompletepath = file.path().parent_path().parent_path().string() + "/026_011_makercomplete/";
-        fs::create_directories(makercompletepath);
-        std::string makercompletefilefullpath = file.path().parent_path().parent_path().string() + "/026_011_makercomplete/" + file.path().stem().string() + ".png";
-        cv::imwrite(makercompletefilefullpath, image);
-        }
+//      {
+//      cv::Mat image = cv::Mat::zeros(cv::Size(2560,1280), CV_8UC3);
+//      cv::line(image, centerposcomplete, makertop_rcomplete, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+//      cv::line(image, centerposcomplete, makerbtm_rcomplete, cv::Scalar(255, 0, 0), 1, cv::LINE_AA);
+//      std::string makercompletepath = file.path().parent_path().parent_path().string() + "/026_011_makercomplete4test/";
+//      fs::create_directories(makercompletepath);
+//      std::string makercompletefilefullpath = file.path().parent_path().parent_path().string() + "/026_011_makercomplete4test/" + file.path().stem().string() + ".png";
+//      cv::imwrite(makercompletefilefullpath, image);
+//      }
 
         /* 回転&拡縮の行列取得 */
         cv::Mat rotscaleMatrix = cv::getRotationMatrix2D(centerposcomplete, -rotatedegree, 1/scale);
